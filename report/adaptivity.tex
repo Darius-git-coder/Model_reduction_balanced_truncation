@@ -1,0 +1,134 @@
+\section{Was bedeutet eine sinnvolle adaptive Entscheidung?}
+Adaptivität benötigt eine Zielgröße, einen Fehlerschätzer oder eine Schranke, eine Verfeinerungsregel und eine Bilanz aller dadurch verursachten Kosten. Eine Errormap mit bekannter Referenz ist zunächst nur ein Diagnosewerkzeug. Sie sollte nicht heimlich den Regler ersetzen, dessen Zuverlässigkeit geprüft werden soll.
+
+Die drei verlangten Metriken ergänzen sich:
+\begin{table}[htbp]\centering\small
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{36mm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}\toprule
+Metrik & Aussage & Im Bericht erfasst\\\midrule
+Wall-Clock-Time & Reale Ausführung einschließlich Speicher, Cache und Bibliotheken & Median und Quartile; Auswahl und neue Simulation getrennt\\
+Arbeit/Auswertungen & Erklärt Kosten jenseits einer bestimmten CPU & Lineare Lösungen, Faktorisierungen, Eingangs- und RHS-Auswertungen; ergänzendes FLOP-Strukturmodell\\
+Akzeptiert/verworfen & Erklärt Korrekturaufwand des Reglers & Tatsächlich gezählte Zeitversuche; keine Ableitung aus RHS-Zahlen\\\bottomrule
+\end{tabularx}
+\end{table}
+
+Weder kleine Fehlerindikatoren noch wenige Schritte beweisen globale Optimalität. Bei BT lässt sich für gegebene Hankel-Werte der kleinste Rang bestimmen, der die gewählte Restsummenschranke erfüllt. Das ist nur innerhalb dieser Schranke optimal. Es ist kein Beweis für die billigste PDE-Approximation, die beste Gitterstruktur oder den kleinsten tatsächlich ausreichenden Rang.
+
+\section{Adaptive Raumauflösung und Modellordnung}
+\subsection{FDM: Richardson-Schätzer und automatische Gitterwahl}
+Für ein Verfahren mit zweiter räumlicher Ordnung und einer asymptotischen Entwicklung $x_h=x_*+ch^2+\cdots$ folgt
+\begin{equation}
+ \eta_{h/2}\approx\frac{E(x_{h/2}-x_h)}{3},\qquad
+ \eta_h\approx\frac43E(x_{h/2}-x_h).
+\end{equation}
+Die Feldwerte werden vor dem Vergleich konsistent auf dieselben Prüfpunkte übertragen. Analoge Fehlertrennung und Richardson-Ansätze für parabolische Differenzenlösungen werden in \cite{debrabant} untersucht. Hier ist $E$ die Energienorm aus Gleichung~\eqref{eq:energy}. Wegen der ersten Euler-Ordnung wird der Fehler der tatsächlich verwendeten groben Zeitweite durch
+\begin{equation}
+ \eta_t\approx 2E(x_{\Delta t}-x_{\Delta t/2})
+\end{equation}
+geschätzt. Raum- und Zeitunterschiede werden dabei jeweils unter ansonsten gleichen Bedingungen gebildet.
+
+Der ausgeführte FDM-Regler beginnt mit drei Intervallen pro Richtung. Er verdoppelt die Intervallzahl und übernimmt das erste feinere Modell, für das
+\begin{equation}\label{eq:fdmstop}
+ 2(\eta_{h/2}+\eta_t)\le\varepsilon
+\end{equation}
+gilt. Der Faktor zwei ist ein ausdrücklich heuristischer Sicherheitsfaktor. Er ersetzt keinen mathematischen Zuverlässigkeitsbeweis. Vorher berechnete grobe Lösungen werden wiederverwendet. Die 1\,000er- und 2\,000er-Zeitläufe und sämtliche Zwischenmodelle gehören zu den Auswahlkosten.
+
+Diese gemessene Variante ist \textbf{globale auflösungsadaptive FDM}; sie ist keine lokale AMR. Bei einer glatten globalen Anregung ist sie eine transparente Ausgangsbasis. Zusätzlich wurden lokale Streifenindikatoren exploriert; deren Ergebnisse werden nicht als repräsentative adaptive Hauptmessung verwendet.
+
+\subsection{BT: Restsummenschranke und ein gemeinsames Fehlerbudget}
+Die Balancierung erfolgt auf dem festen feinen FDM-Modell mit $d=17$. Für die Energieaussage in physikalischer räumlicher Quadratur ist bei $C=I$ der Faktor $h=1/18$ nötig. Bei $\norm{u}_{L^2(0,1)}=\sqrt{50}$ lautet der Reduktionsanteil
+\begin{equation}
+ \delta_r=\frac1{18}\left(2\sum_{k>r}\sigma_k\right)\sqrt{50}.
+\end{equation}
+Zusätzlich werden der Raumfehler des Ausgangsmodells aus dem Vergleich $d=17$ mit $d=35$ und dessen Zeitfehler aus 1\,000 gegenüber 2\,000 Schritten geschätzt. Gewählt wird der kleinste Rang mit
+\begin{equation}\label{eq:btstop}
+ \delta_r+2(\eta_{h,\,d=17}+\eta_{t,\,d=17})\le\varepsilon.
+\end{equation}
+Die unabhängige Sinusreihenlösung steht in keiner dieser Auswahlformeln. Sie wird erst nach dem Stopp zur Berechnung des tatsächlichen Prüfgitterfehlers verwendet. Die Kombination enthält eine theoretische BT-Normschranke und asymptotische Diskretisierungsschätzer; als Ganzes ist sie deshalb keine zertifizierte PDE-Fehlerschranke.
+
+\subsection{Gemessene Ergebnisse und Kosten}
+\begin{table}[htbp]\centering\small
+\caption{Schätzer-/schrankengesteuerte Auswahl. Fehler und Schätzung in der gemeinsamen Energienorm. Zeiten in ms; Online ist eine neue Simulation nach der Auswahl, ohne erneute Auswahl.}
+\begin{tabular}{lrrrrrr}\toprule
+Methode & $\varepsilon$ & Zustände & Schätzung & Fehler & Auswahl & Online\\\midrule
+\tableinput adaptive_rows.tex
+\bottomrule\end{tabular}
+\end{table}
+
+Bei $\varepsilon=0{,}002$ wählt FDM hier 529 Zustände, BT vier. Die Auswahlphase der FDM dauert ungefähr $291$ ms, die von BT $392$ ms. Der anschließend validierte Energiefehler liegt bei etwa $4{,}15\cdot10^{-4}$ beziehungsweise $5{,}67\cdot10^{-4}$. Eine neue Zustandssimulation dauert ungefähr $51{,}8$ ms beziehungsweise $5{,}4$ ms. Somit ist die BT-Auswahl in diesem Fall teurer, der wiederholte Betrieb jedoch deutlich günstiger. Der ausgewählte FDM-Fehler ist zugleich kleiner: Die Aussage lautet nicht, dass BT jeden Fehlervergleich gewinnt.
+
+Für $\varepsilon=10^{-3}$ und $5\cdot10^{-4}$ gibt die getestete BT-Rangwahl keinen Rang frei. Ihr konservatives geschätztes Diskretisierungsbudget liegt bereits bei etwa $1{,}197\cdot10^{-3}$. Das ist \emph{kein Unmöglichkeitsbeweis für den tatsächlichen Fehler}. Es zeigt, dass zusätzliche BT-Zustände die verwendete Budgetentscheidung nicht reparieren. Eine gemeinsame $h/r$-Adaption müsste nun das Ausgangsgitter verfeinern, Diskretisierung und Balancierung neu berechnen und die zusätzlichen Kosten zählen. Eine solche hybride Regelschleife wird hier erklärt, aber nicht als bereits gemessen ausgegeben.
+
+\fig{07_adaptive_resolution.pdf}{Work-Precision-Vergleich der tatsächlich ausgeführten Auswahlregler. Kosten, erreichte Fehler und numerische Schätzer bleiben getrennt. Diskrete Modellgrößen erzeugen Plateaus. Nicht freigegebene BT-Zieltoleranzen werden nicht durch scheinbar erfolgreiche Punkte ersetzt. Die unabhängige Referenz steuert keine Auswahlentscheidung.}{fig:adaptive}
+
+\begin{table}[htbp]\centering\small
+\caption{Gezählte Auswahl-Arbeit für zwei Toleranzen. Ein linearer Lösevorgang mit Dimension vier ist erheblich billiger als einer mit mehreren tausend Zuständen; die Rohzahl allein genügt deshalb nicht. LU bezeichnet Faktorisierungen der Euler-Matrix.}
+\begin{tabular}{lrrrrrr}\toprule
+Methode & $\varepsilon$ & Probeläufe & Lösen & LU & Lyapunov & $\sum nN_t$\\\midrule
+\tableinput work_rows.tex
+\bottomrule\end{tabular}
+\end{table}
+
+Die BT-Auswahl enthält zusätzlich genau eine SVD und die Gramian-Faktorisierungen. Die dimensionsgewichtete Zahl $\sum nN_t$ ist ein transparenter Arbeitsindikator und \emph{keine FLOP-Zahl}. Referenzerzeugung, Plotten und Berichtserstellung sind gemeinsame Prüfkosten und werden nicht als Anpassungskosten einem der Verfahren zugeschlagen.
+
+\fig{08_adaptive_errors.pdf}{Gesonderter Vergleich beider ausgewählten Modelle bei Zieltoleranz $0{,}002$, gegen die unabhängige PDE-Referenz. Beide Karten verwenden dieselben räumlichen Prüfpunkte und dieselbe absolute Farbskala. Die rechte Differenz zeigt, welche Methode am dargestellten Zeitpunkt lokal genauer ist. Die Auswahlbedingung betrifft eine integrierte Energienorm, nicht den maximalen Pixelwert.}{fig:adaptiveerrors}
+
+\subsection{Wie lokale FDM-Adaption praktisch erweitert wird}
+Ein lokales Verfahren markiert Zellen oder Intervalle mit großen Indikatoren, etwa so, dass eine vorgegebene Fraktion der quadrierten Indikatorsumme erfasst wird. Verfeinert wird nur dort; ausreichend kleine Indikatoren erlauben Vergröberung. Zwischen alten und neuen Gittern sind Zustände konsistent zu übertragen. Die Kosten dafür gehören in die Bilanz. Einfache Gradienten zeigen scharfe Strukturen, sind aber nicht automatisch zuverlässige Fehlerindikatoren.
+
+Auf nichtäquidistanten Punkten lautet eine konsistente zweite Ableitung
+\begin{equation}
+ z''(x_i)\approx\frac{2}{h_-+h_+}
+ \left(\frac{z_{i+1}-z_i}{h_+}-\frac{z_i-z_{i-1}}{h_-}\right).
+\end{equation}
+Der ursprüngliche gleichmäßige Stern darf nicht durch bloßes Einsetzen irgendeines lokalen $h$ weiterverwendet werden. Auf abrupt wechselnden Abständen kann der führende Fehler einen Term proportional zu $(h_+-h_-)z'''$ enthalten; zweite Ordnung ist dann nicht pauschal garantiert. Blockgrenzen, Randbehandlung, Gitterabstufung und implizite Kopplungen müssen dazu passen. Eine Referenz für echte adaptive Wärmediskretisierungen ist \cite{hybrid}.
+
+Eine kostenbewusste kombinierte Adaption vergleicht die geschätzte Reduktion des Raum-, Zeit- oder Modellfehlers pro zusätzlicher Rechenarbeit. Sie wählt dann etwa kleinere $h$, kleinere $\Delta t$ oder größere $r$. Das ist eine Optimierungsheuristik unter einem Fehlerbudget, keine automatische globale Optimallösung.
+
+\section{Adaptive Zeitintegration: identischer Regler für beide Modelle}
+\subsection{Schrittverdopplung, Akzeptanz und Verwerfung}
+Wir führen denselben impliziten Euler auf dem feinen FDM-System und dem vierdimensionalen BT-System aus. Pro Versuch werden ein voller Schritt $x^{[1]}$ und zwei halbe Schritte $x^{[2]}$ berechnet. Kontrolliert wird im physikalischen Ausgangsraum:
+\begin{equation}
+ q=\sqrt{\frac1p\sum_i\left(
+ \frac{(C x^{[2]}-C x^{[1]})_i}
+ {\mathrm{atol}+\mathrm{rtol}\max(|Cx_k|_i,|Cx^{[2]}|_i)}\right)^2}.
+\end{equation}
+Bei FDM wird $C=I$ ohne Matrixmultiplikation umgesetzt; BT rekonstruiert dieselben 289 Feldwerte für die Kontrolle. $q\le1$ akzeptiert die zwei halben Schritte. Sonst wird der Versuch verworfen. Die neue Makroschrittweite folgt $h_{\rm neu}\approx0{,}9h\,q^{-1/2}$ mit begrenztem Änderungsfaktor. Richardson-Extrapolation wird nicht durchgeführt; das angenommene Verfahren bleibt Euler erster Ordnung.
+
+Jeder Versuch benötigt genau drei lineare Lösungen und zwei Auswertungen von $u$. Der Halbschrittfaktor wird innerhalb eines Versuchs wiederverwendet. Verschiedene Schrittweiten benötigen jedoch meist neue Faktorisierungen. Ein kleiner Cache hält bis zu 16 Faktorisierungen. Ein akzeptierter Makroschritt enthält zwei tatsächlich ausgeführte Halbschritte; feste Schritte und adaptive Makroschritte sind daher nicht kostenäquivalent.
+
+Der validierte Zeitfehler wird auf denselben 101 Zeiten im rekonstruierten Feld berechnet. Gespeicherte Zwischenwerte werden linear in der Zeit interpoliert. Als Referenz dient die analytische modale Lösung desselben endlichen Modells. Der BT-Zeitfehler enthält deshalb bewusst keinen BT-Reduktionsfehler; dieser wurde separat untersucht.
+
+\subsection{Drei Metriken gemeinsam auswerten}
+\begin{table}[htbp]\centering\small
+\caption{Feste und adaptive Zeitintegration. A/V: akzeptierte/verworfene Versuche. MOp: arithmetisches Strukturmodell in Millionen Operationen. BT-Aufbaukosten sind hier ausgeschlossen und in den früheren Tabellen getrennt erfasst.}
+\begin{tabular}{llrrrrrr}\toprule
+Modell & Einstellung & ms & Zeitfehler & A/V & Lösen & LU & MOp\\\midrule
+\tableinput time_rows.tex
+\bottomrule\end{tabular}
+\end{table}
+
+Ein Beispiel verdeutlicht den Unterschied: FDM mit 300 festen Schritten erreicht ungefähr $9{,}38\cdot10^{-4}$ Zeitfehler bei $12{,}3$ ms, einer LU-Zerlegung und 300 Lösungen. Der adaptive Regler bei $\mathrm{rtol}=10^{-3}$ akzeptiert nur 107 Makroschritte und verwirft vier Versuche. Trotzdem benötigt er 333 Lösungen und 222 Faktorisierungen; die Laufzeit liegt bei etwa $268$ ms, der Fehler bei $1{,}08\cdot10^{-3}$. Die Fehler sind ähnlich, aber nicht exakt gleich. Die Work-Precision-Kurven zeigen den Zusammenhang umfassender als ein einzelnes Zahlenpaar.
+
+\fig{09_adaptive_time.pdf}{Oben: Fehler gegen gemessene Laufzeit und gegen modellierte arithmetische Arbeit. Unten: akzeptierte/verworfene Versuche und tatsächlicher Schrittweitenverlauf. Der Fehlerregler macht für beide Modelle nahezu dieselben zeitlichen Entscheidungen; die Kosten pro Versuch unterscheiden sich stark. Die Kreuze markieren verworfene Zeitversuche.}{fig:timeadapt}
+
+Für die hier glatte Anregung und die konstante Matrix lohnt sich die besonders einfache adaptive Euler-Implementierung häufig nicht gegenüber vorbereitetem festem Euler. Das ist keine allgemeine Aussage gegen adaptive Zeitverfahren. Höhere Ordnung, steifigkeitsangepasste Regler, wiederverwendete Vorkonditionierer und robustere LU-Wiederverwendung können andere Ergebnisse liefern; sie wurden nicht mitgemessen.
+
+\subsection{Was genau das FLOP-Modell zählt}
+Gemessen werden keine Hardware-FLOP-Counter. Für dünnbesetzte Faktoren wird pro Dreieckslösung das Strukturmodell
+\begin{equation}
+ F_{\rm solve}\approx2(\operatorname{nnz}L+\operatorname{nnz}U)-3n
+\end{equation}
+verwendet. Für dichte Faktoren sind es $2r^2-r$ Operationen pro Lösung und näherungsweise $2r^3/3$ für eine LU-Faktorisierung. Die dünnbesetzte Faktorisierung wird strukturell über
+\begin{equation}
+ F_{\rm LU}\approx\sum_k(2\ell_k u_k+\ell_k)
+\end{equation}
+modelliert, wobei $\ell_k$ und $u_k$ die strukturellen Einträge unter beziehungsweise rechts der Pivotposition zählen. Hinzu kommen RHS-Arbeit und BT-Kontrollprojektionen. Vergleiche, Fehlernormen, Speicherbewegung, Pivotverwaltung, supernodale Zusatzarbeit, Bibliotheks- und Python-Aufwand sind nicht vollständig enthalten. Die MOp-Spalte ist damit ein erklärendes Modell, keine exakte implementations- oder hardwareunabhängige Gesamtzahl. Exakte Löse-, Faktorisierungs- und Versuchszähler stehen daneben.
+
+\section{Entscheidungshilfe und Grenzen}
+\textbf{FDM ist besonders naheliegend}, wenn die räumliche Lösung direkt gebraucht wird, Geometrie oder Parameter wechseln, nur wenige Simulationen anstehen oder lokale Strukturen eine räumliche Verfeinerung rechtfertigen. Das feine Gitter bleibt jedoch teuer; ein stabiler impliziter Integrator verhindert diesen Aufwand nicht.
+
+\textbf{BT ist besonders nützlich}, wenn ein stabiles lineares System mit festem Eingangs-Ausgangs-Kanal häufig simuliert wird und seine Hankel-Werte schnell abfallen. Die globale Systemnormschranke bietet eine klare Rangwahl. Teurer Aufbau, Verlust räumlicher Lokalität, Ausgangsabhängigkeit und der verbleibende Diskretisierungsfehler sind die wichtigsten Grenzen.
+
+\textbf{Adaptivität ist besonders nützlich}, wenn eine feste Auflösung viel Arbeit in bereits ausreichend genauen Bereichen oder Zeitabschnitten verbringt. Sie verursacht aber Schätz-, Kontroll-, Übertragungs- und ggf. erneute Faktorisierungskosten. Bei BT können Gramian-Iterationen zusätzlich über Lyapunov-Residuen kontrolliert werden; ein kleines Residuum allein ist ohne Konditionierungsinformation noch keine fertige Zustandsfehlergarantie. Bei Parameter- oder Basiswechseln entstehen weitere Projektions- und Initialisierungsfehler.
+
+Die sinnvolle Kombination lautet deshalb: erst die geforderte Ausgangsgröße und Fehlernorm festlegen, dann Diskretisierungs- und Reduktionsbudgets trennen, eine passende Raum-/Rang-/Zeitstrategie wählen und schließlich tatsächlichen Fehler, gesamte Laufzeit und Arbeitszähler gemeinsam überprüfen.

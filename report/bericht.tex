@@ -1,0 +1,74 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[ngerman]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=24mm,headheight=15pt]{geometry}
+\usepackage{amsmath,amssymb,graphicx,booktabs,tabularx,longtable,array}
+\usepackage{xcolor,microtype,fancyhdr}
+\usepackage{hyperref}
+\definecolor{ink}{HTML}{17334D}
+\definecolor{fdm}{HTML}{2864A3}
+\definecolor{bt}{HTML}{B02B80}
+\hypersetup{colorlinks=true,linkcolor=ink,urlcolor=fdm,citecolor=bt,
+ pdftitle={Finite Differenzen und Balanced Truncation: Fehler, Laufzeiten und Adaptivität},
+ pdfauthor={Numerischer Arbeitsbericht zum Repository Model reduction balanced truncation}}
+\graphicspath{{figures/}}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small FDM und Balanced Truncation}
+\fancyhead[R]{\small Numerischer Vergleich}
+\fancyfoot[C]{\thepage}
+\setlength{\parindent}{0pt}\setlength{\parskip}{5pt}
+\setlength{\emergencystretch}{2em}
+\renewcommand{\arraystretch}{1.18}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\Hinfty}{\mathcal{H}_\infty}
+\newcommand{\fig}[3]{\begin{figure}[htbp]\centering\includegraphics[width=\linewidth]{#1}\caption{#2}\label{#3}\end{figure}}
+\makeatletter\let\tableinput\@@input\makeatother
+\input{results_macros}
+
+\begin{document}
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+\vspace*{14mm}
+{\color{ink}\Huge\bfseries Finite Differenzen\par und Balanced Truncation\par}
+\vspace{8mm}
+{\Large Fehler, Laufzeiten und adaptive Verfahren\par}
+\vspace{5mm}
+{\large Ein reproduzierbarer Vergleich an der zweidimensionalen Wärmeleitung\par}
+\vspace{12mm}
+\includegraphics[width=\linewidth]{01_fields_errors.pdf}
+\vfill
+\textbf{Untersuchungsrahmen}\par
+Aufgabenblatt 2, Model Reduction, TU Berlin, Wintersemester 2026/27.\par
+Gemessene Daten vom 24.~November 2026. Python, NumPy und SciPy; doppelte Genauigkeit und ein BLAS-Thread.
+\vspace{5mm}\par
+\url{https://github.com/Darius-git-coder/Model_reduction_balanced_truncation}
+\end{titlepage}
+\pagenumbering{roman}
+\hypersetup{pageanchor=true}
+
+\section*{Ergebnisse auf einen Blick}
+\addcontentsline{toc}{section}{Ergebnisse auf einen Blick}
+Finite Differenzen (FDM) erzeugen aus einer partiellen Differentialgleichung ein räumliches Zustandsmodell. Balanced Truncation (BT) reduziert anschließend ein solches endliches Modell. Beide Methoden greifen damit auf unterschiedlichen Ebenen an und können kombiniert werden.
+
+\begin{itemize}
+\item Für die gegebene Anregung ist BT mit vier Zuständen deutlich kleiner als die grobe FDM mit 64 Zuständen. Der maximale Fehler zur gemeinsamen feinen FDM-Referenz ist in diesem Experiment etwa $1{,}04\cdot10^{-3}$ statt $5{,}35\cdot10^{-3}$; verglichen wird auf denselben 64 inneren Punkten.
+\item Die BT-Konstruktion ist zunächst teuer. Bei wiederholten Simulationen mit unverändertem System amortisiert sie sich hier nach ungefähr \BreakEven\ Läufen gegenüber dem feinen FDM-Modell. Das ist ein aus gemessenen Komponenten abgeleiteter Schnittpunkt, keine allgemeine Konstante.
+\item Ein größerer BT-Rang beseitigt den Raumfehler des Ausgangsmodells nicht. Im Rangexperiment nähert sich der Fehler zur unabhängigen PDE-Referenz einem Plateau von etwa \PDEFloor\ im punktweisen Maximum.
+\item Die automatische Raum-/Rangwahl wird durch Richardson-Schätzer beziehungsweise die BT-Schranke gesteuert. Die unabhängige Referenz wird \emph{erst nach der Auswahl} zur Validierung verwendet. Ein Schätzer ist dabei nicht automatisch eine garantierte Fehlerschranke.
+\item Adaptive Zeitschritte benötigen weniger akzeptierte Makroschritte, sind hier bei FDM aber trotzdem häufig langsamer: wechselnde Schrittweiten verursachen viele neue LU-Faktorisierungen. Laufzeit, Rechenarbeit und Schrittzahlen müssen gemeinsam betrachtet werden.
+\end{itemize}
+
+Der Bericht unterscheidet gemessene Fehler, asymptotische Schätzungen, theoretische Schranken und arithmetische Aufwandsmodelle. Es wird weder globale Optimalität der Adaptivität noch eine universelle Überlegenheit eines Verfahrens behauptet.
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+\input{theory}
+\clearpage
+\input{results}
+\clearpage
+\input{adaptivity}
+\clearpage
+\input{reproduction}
+\end{document}

@@ -1,0 +1,136 @@
+\section{Problem, Physik und Vergleichsgegenstand}
+Auf dem Einheitsquadrat $\Omega=(0,1)^2$ betrachten wir
+\begin{align}
+ \partial_t z(t,x)&=\Delta z(t,x)+b(x)u(t),\\
+ b(x_1,x_2)&=\sin(3\pi x_1/2)\sin(4\pi x_2/3),\\
+ z|_{\partial\Omega}&=0,\qquad z(0,x)=0.
+\end{align}
+Im Hauptversuch gilt $u(t)=10\sin(2\pi t)$ auf $[0,1]$. Das Produkt $b(x)u(t)$ ist örtlich und zeitlich vorzeichenbehaftet: Es beschreibt Wärmezufuhr und Wärmeentzug relativ zu einer Referenztemperatur. Eine periodische Antwort wird hier von außen erzwungen; sie ist kein Hinweis auf eine Wellengleichung. Ohne Anregung klingt die Lösung wegen des festgehaltenen Nullrandes gegen null ab. Die Erhaltung einer mittleren Temperatur würde andere Randbedingungen, etwa einen isolierten Rand ohne Quellen, voraussetzen.
+
+Die beiden Ausgänge des Blattes sind
+\begin{equation}
+ y_1(t)=\int_\Omega z(t,x)\,dx,\qquad y_2(t)=z(t,\cdot).
+\end{equation}
+Eine Balancierung hängt von $B$ und $C$ ab: Ein für das Integral guter reduzierter Zustand muss nicht das gesamte räumliche Feld gleich gut wiedergeben. Die Feldvergleiche dieses Berichts verwenden deshalb $C_2=I$.
+
+\begin{table}[htbp]\centering\small
+\caption{Die wichtigsten strukturellen Unterschiede.}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{30mm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}\toprule
+Aspekt & Finite Differenzen & Balanced Truncation\\\midrule
+Aufgabe & PDE räumlich diskretisieren & Vorhandenes LTI-System reduzieren\\
+Zustände & Werte an Gitterpunkten & Globale gewichtete Zustandsrichtungen\\
+Dimension & $n=d^2$, gekoppelt an $h$ & Ordnung $r$, gekoppelt an Hankel-Spektrum\\
+Lokalität & Lokaler 5-Punkt-Stern; dünnbesetztes $A$ & Im Allgemeinen dichte reduzierte Matrizen\\
+Eingang/Ausgang & Gitter meist unabhängig vom gewählten $C$ & Relevanz einer Richtung hängt von $B,C$ ab\\
+Fehlerkontrolle & Konsistenzordnung, Schätzer, ggf. Residuenschranken & Globale Eingangs-Ausgangs-Schranke in $\Hinfty$\\
+Erhaltung & Räumliche Struktur bleibt zugänglich & Stabilität unter Voraussetzungen; keine allgemeine Positivitäts- oder Erhaltungsgarantie\\
+Änderung von $B,C$ & System/Operator anpassen & Erneute Balancierung kann nötig werden\\
+Viele Simulationen & Große Zustandsdimension bleibt & Offline-Kosten können sich amortisieren\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Finite Differenzen: vom Gitter zum LTI-System}
+\subsection{Raumdiskretisierung und Speicherstruktur}
+Mit $d$ inneren Punkten pro Richtung ist $h=1/(d+1)$. Der Parameter $d$ zählt Punkte; er ist kein Abstand. Die Randpunkte haben vorgegebene Werte und werden nicht als unabhängige Zustände gespeichert. Der klassische Stern lautet
+\begin{equation}
+ (\Delta_h z)_{ij}=\frac{z_{i+1,j}+z_{i-1,j}+z_{i,j+1}+z_{i,j-1}-4z_{ij}}{h^2}.
+\end{equation}
+Reihenweises Stapeln der inneren Werte ergibt $x\in\R^{d^2}$. Mit der eindimensionalen Differenzenmatrix $K=h^{-2}\operatorname{tridiag}(1,-2,1)$ entsteht
+\begin{equation}
+ A=I\otimes K+K\otimes I,\quad B_{ij}=b(ih,jh),\quad
+ C_1=h^2\mathbf 1^\top,\quad C_2=I.
+\end{equation}
+Damit gilt $\dot x=Ax+Bu$ und $y=Cx$. Die Matrix hat auf dem regulären Gitter $5d^2-4d$ mathematisch von null verschiedene Einträge. Dünnbesetzte Formate speichern den Stern mit Aufwand $O(n)$; bei einer impliziten Lösung kann die LU-Zerlegung zusätzlich Füllung erzeugen.
+
+Durch Taylorentwicklung erhält man bei ausreichender Glattheit
+\begin{equation}
+ \Delta_h z-\Delta z=\frac{h^2}{12}(\partial_{x_1}^4z+\partial_{x_2}^4z)+O(h^4).
+\end{equation}
+Das erklärt die zweite räumliche Konsistenzordnung. Randbehandlung, Regularität und Zeitdiskretisierung müssen ebenfalls stimmen, damit diese Ordnung im beobachteten Fehler erscheint. Eine ausführliche Einführung in räumliche Differenzenverfahren bietet beispielsweise \cite{kochmann}.
+
+\subsection{Zeitintegration und Stabilität}
+Der implizite Euler berechnet
+\begin{equation}\label{eq:euler}
+ (I-\Delta t A)x_{k+1}=x_k+\Delta t B u(t_{k+1}).
+\end{equation}
+Bei fester Schrittweite wird die linke Matrix einmal faktorisiert. Danach benötigt jeder Schritt nur noch einen linearen Lösevorgang. Auf glatten Lösungen ist der globale Zeitfehler erster Ordnung. Das führt unter passenden Voraussetzungen auf eine Gesamtform $O(h^2)+O(\Delta t)$, mit problemabhängigen Konstanten und Normen.
+
+Die Eigenwerte des diskreten Laplaceoperators sind
+\begin{equation}
+ \lambda_{pq}=-\frac4{h^2}\left[\sin^2\!\frac{p\pi h}{2}+\sin^2\!\frac{q\pi h}{2}\right]<0.
+\end{equation}
+Der explizite Euler verlangt für den üblichen 2D-Stern insbesondere $\Delta t\le h^2/4$. Der implizite Euler ist für dieses Diffusionssystem ohne eine solche Stabilitätsbeschränkung einsetzbar. Große Schritte können trotzdem ungenau sein: Stabilität ersetzt keine Genauigkeitskontrolle.
+
+\section{Balanced Truncation: Zustandsrichtungen auswählen}
+\subsection{Gramians und ihre Bedeutung}
+Für ein reelles asymptotisch stabiles LTI-System lösen wir
+\begin{align}
+ AP+PA^\top+BB^\top&=0,\\
+ A^\top Q+QA+C^\top C&=0.
+\end{align}
+Es gilt
+\begin{equation}
+ P=\int_0^\infty e^{At}BB^\top e^{A^\top t}dt,\qquad
+ Q=\int_0^\infty e^{A^\top t}C^\top Ce^{At}dt.
+\end{equation}
+Die symmetrischen positiv semidefiniten Gramians sind im Allgemeinen keine orthogonalen Projektoren. Bei erreichbaren Zuständen beschreibt $x^\top P^{-1}x$ die minimale Eingangsenergie zum Erreichen von $x$; $x^\top Qx$ ist die Ausgangsenergie der freien Antwort aus $x$ \cite{energy}. Eine Richtung kann stark anregbar, aber am Ausgang praktisch unsichtbar sein. Ihre Bedeutung für den gewählten Eingangs-Ausgangs-Kanal bleibt dann klein.
+
+\subsection{Die fünf Schritte mit eindeutiger Konvention}
+Wir verwenden $x_{\rm bal}=Tx$ und $x\approx\widetilde T x_{\rm bal}$. Ein hochgestelltes $\top$ bedeutet Transposition; es ist nicht die Transformationsmatrix $T$.
+\begin{enumerate}
+\item Löse die beiden Lyapunov-Gleichungen für $P,Q$.
+\item Bilde Faktoren $P\approx RR^\top$, $Q\approx LL^\top$. Die bereitgestellte Routine \texttt{lrcf} erlaubt rechteckige Faktoren bei numerisch niedrigem Rang.
+\item Berechne $L^\top R=U\Sigma V^\top$, mit absteigenden positiven Singulärwerten $\sigma_k$.
+\item Setze
+\begin{equation}
+ T=\Sigma^{-1/2}U^\top L^\top,\qquad
+ \widetilde T=RV\Sigma^{-1/2},\qquad T\widetilde T=I.
+\end{equation}
+\item Bilde $A_b=TA\widetilde T$, $B_b=TB$, $C_b=C\widetilde T$ und schneide auf die ersten $r$ Zustände zurück:
+\begin{equation}
+ A_b=\begin{pmatrix}A_{11}&A_{12}\\A_{21}&A_{22}\end{pmatrix},\quad
+ B_b=\begin{pmatrix}B_1\\B_2\end{pmatrix},\quad C_b=(C_1\ C_2),\quad
+ (A_r,B_r,C_r)=(A_{11},B_1,C_1).
+\end{equation}
+\end{enumerate}
+Die blockweisen Bezeichnungen $C_1,C_2$ in dieser letzten Formel sind Blöcke der balancierten Ausgangsmatrix und nicht die beiden Beobachtungsvarianten des Aufgabenblattes.
+
+In einer exakten minimalen balancierten Realisierung gilt $P_b=Q_b=\Sigma$. Die Diagonaleinträge müssen nicht gleich sein. Die Hankel-Singulärwerte erfüllen $\sigma_k=\sqrt{\lambda_k(PQ)}$. Die Vorschrift ist eine Projektion auf relevante globale Richtungen \cite{benner2023}. Bei rechteckigen Abbildungen ist $\widetilde T$ keine gewöhnliche Inverse; $\widetilde TT$ ist im Allgemeinen auch keine orthogonale Projektion.
+
+\fig{10_global_directions.pdf}{Die ersten vier rekonstruierten BT-Richtungen für vollständige Zustandsbeobachtung. Jede Richtung erstreckt sich über das ganze Gebiet. Pro Teilbild wird eine eigene symmetrische Farbskala verwendet; daraus darf keine Gleichheit ihrer Bedeutung abgelesen werden.}{fig:modes}
+
+\subsection{Was erhalten bleibt und was nicht}
+Bei stabilem minimalem Ausgangssystem und einer zulässigen Trennung des Hankel-Spektrums, insbesondere $\sigma_r>\sigma_{r+1}$, bleibt die reduzierte Realisierung asymptotisch stabil \cite{lall}. Gruppen gleicher Singulärwerte sollten nicht willkürlich geteilt werden. Standard-BT garantiert im Allgemeinen weder Positivität noch ein diskretes Maximumprinzip noch physikalische Interpretierbarkeit jeder reduzierten Koordinate. Die übliche Fehlerschranke setzt Nullanfangswerte voraus. Für andere Anfangswerte oder veränderte Parameter sind zusätzliche Überlegungen nötig.
+
+\section{Fehler, Referenzen und belastbare Aussagen}
+\subsection{Drei verschiedene Fehlerquellen}
+Räumliche Diskretisierung, Zeitintegration und Modellreduktion müssen getrennt werden. Schematisch gilt in einer gemeinsamen Norm und mit konsistenter Rekonstruktion $\mathcal I_h$
+\begin{align}
+ \norm{z-\mathcal I_h C_r x_r^{\Delta t}}
+ &\le \underbrace{\norm{z-\mathcal I_h x_h}}_{\text{Raumfehler}}
+ +\underbrace{\norm{\mathcal I_h(x_h-C_rx_r)}}_{\text{Reduktionsfehler}}\\
+ &\quad+\underbrace{\norm{\mathcal I_h C_r(x_r-x_r^{\Delta t})}}_{\text{Zeitfehler}}.
+\end{align}
+Ein schrumpfender Reduktionsfehler allein beweist keine verbesserte PDE-Approximation. Verschiedene Fehler können sich in Einzelversuchen teilweise aufheben; monotone Punktfehler sind bei wachsendem $r$ nicht garantiert.
+
+\subsection{Die BT-Schranke und ihre Reichweite}
+Für $G(s)=C(sI-A)^{-1}B$ und den BT-Approximanten gilt im idealen exakten Rahmen
+\begin{equation}\label{eq:btbound}
+ \sigma_{r+1}\le\norm{G-G_r}_{\Hinfty}\le 2\sum_{k=r+1}^{n}\sigma_k.
+\end{equation}
+Die obere Schranke begrenzt die Verstärkung des Reduktionsfehlers über alle Frequenzen. Für Nullanfangswerte folgt
+\begin{equation}
+ \norm{y-y_r}_{L^2}\le 2\sum_{k>r}\sigma_k\,\norm{u}_{L^2}.
+\end{equation}
+Auf $[0,1]$ kann der Eingang danach mit null fortgesetzt werden; die kausale Antwort im Messfenster bleibt unverändert. Die Energieaussage gilt dann auch eingeschränkt auf dieses Fenster. Sie ist keine unmittelbare punktweise Schranke für jede Errormap \cite{lall,lower}.
+
+Die Experimente verwenden numerisch komprimierte Gramians mit Toleranz $10^{-14}$. Die dargestellte Restsumme ist deshalb eine numerische Version der idealen Schranke; ein zusätzliches zertifiziertes Fehlerbudget für die Gramian-Kompression wird hier nicht konstruiert. Abgetastete Frequenzmaxima sind ebenfalls keine Beweise für das kontinuierliche Supremum. Die Stichprobe enthält null und 1\,000 logarithmische positive Frequenzen zwischen $10^{-5}$ und $10^5$; bei reellen Systemen ist die negative Seite konjugiert symmetrisch.
+
+\subsection{Die im Bericht verwendeten Normen}
+Die ersten Errormaps vergleichen grobe FDM und BT mit derselben feinen FDM-Lösung an den 64 groben inneren Punkten. Dort ist keine räumliche Interpolation nötig. Die Aussage betrifft die Diskretisierung des Blattes, nicht die exakte PDE.
+
+Für den adaptiven Raum-/Rangvergleich verwenden wir dagegen ein festes Prüfgitter mit $19\times19$ Punkten einschließlich Rand und 101 Zeitpunkten. Bewertet wird die quadraturbasierte Energienorm
+\begin{equation}\label{eq:energy}
+ E(v)=\left(\operatorname{trapz}_{t\in[0,1]}\frac1{18^2}\sum_{i,j}|v_{ij}(t)|^2\right)^{1/2}.
+\end{equation}
+Gitterlösungen werden dazu bilinear auf dieselben Prüfpunkte übertragen. Zusätzlich werden punktweise Maxima angegeben. Fehler zwischen Prüfpunkten werden dadurch nicht zertifiziert. Der reine Zeitvergleich verwendet nochmals einen anderen, ausdrücklich so bezeichneten Fehler: Abweichung von der zeitlich exakten Lösung \emph{desselben} semidiskreten Modells.

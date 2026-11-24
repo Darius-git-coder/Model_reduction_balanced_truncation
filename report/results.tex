@@ -1,0 +1,78 @@
+\section{Versuchsaufbau und unabhängige Referenz}
+\subsection{Reproduzierbare Messbedingungen}
+Alle Zahlen wurden lokal mit Python 3.11.5, NumPy 1.26.4, SciPy 1.13.1 und OpenBLAS 0.3.21 auf einer x86\_64-Umgebung gemessen. Die BLAS-Bibliothek verwendet genau einen Thread; ihre gemeldete Kernelarchitektur ist Haswell. Das ist eine Softwareangabe und kein vollständiges Hardwareinventar. Absolute Zeiten hängen von Rechner, Auslastung und Bibliotheken ab.
+
+Ein Aufwärmlauf wird verworfen. Für Online- und Zeitintegrationsmessungen wird der Median aus fünf Wiederholungen verwendet, für die kostspieligere Balancierung und adaptive Modellauswahl aus drei Wiederholungen. Quartile stehen in den CSV-Dateien. Aufbau, Faktorisierung, eigentliche Simulation und Feldrekonstruktion werden getrennt erfasst. Plotten, PDF-Erzeugung und Dateischreiben liegen außerhalb der gemessenen Abschnitte.
+
+Die regulären Versuche verwenden $t_f=1$, 1\,000 feste Euler-Schritte und Nullanfangswerte. Für das Ausgangsmodell gilt $d=17$, $n=289$. Das grobe Modell besitzt $d=8$, $n=64$; das BT-Modell typischerweise $r=4$. Unterschiedliche Zustandszahlen sind ausdrücklich sichtbar. Das ist kein Vergleich bei identischem Rechenbudget. Ein Vergleich bei gleicher Fehlerqualität ist aussagekräftiger als die bloße Forderung gleicher Dimensionen.
+
+\subsection{Sinusreihe statt nur eines feineren Gitters}
+Da Randbedingungen und Geometrie einfach sind, lässt sich eine unabhängige Referenz aus Eigenfunktionen der kontinuierlichen Wärmegleichung gewinnen:
+\begin{equation}
+ z(t,x)=\sum_{k,l\ge1}\beta_k(3/2)\beta_l(4/3)f_{\lambda_{kl}}(t)
+ \sin(k\pi x_1)\sin(l\pi x_2),\qquad \lambda_{kl}=\pi^2(k^2+l^2).
+\end{equation}
+Hierbei folgen die Koeffizienten direkt durch Integration:
+\begin{align}
+ \beta_k(a)&=\operatorname{sinc}(a-k)-\operatorname{sinc}(a+k),\quad
+ \operatorname{sinc}(q)=\frac{\sin(\pi q)}{\pi q},\\
+ f_\lambda(t)&=10\,\frac{\lambda\sin(2\pi t)-2\pi\cos(2\pi t)+2\pi e^{-\lambda t}}
+ {\lambda^2+(2\pi)^2}.
+\end{align}
+Diese Referenz löst die modalen Zeitgleichungen analytisch. Verwendet werden $192\times192$ Moden. Gegenüber $96\times96$ Moden ändert sich das Feld auf den festgelegten Prüfpunkten um höchstens etwa $3{,}20\cdot10^{-6}$. Das ist eine Konvergenzkontrolle und keine rigorose obere Schranke für den unendlichen Reihenrest. Die Referenz wird vor den adaptiven Auswahlphasen bereitgestellt und erst danach zum unabhängigen Fehlervergleich herangezogen; sie ist kein Eingabeargument der Auswahlregler.
+
+\section{Nichtadaptive Methoden: Feld, Rang und Konvergenz}
+\fig{01_fields_errors.pdf}{Nichtadaptiver Vergleich bei $t\approx0{,}284$. Oben stehen die drei Felder. Unten werden beide Approximationen an denselben groben Punkten mit derselben feinen FDM-Referenz verglichen. Beide absoluten Errormaps haben dieselbe Skala. Die grün-positive Differenz bedeutet lokal kleinere BT-Abweichung; negative Werte bedeuten kleinere FDM-Abweichung.}{fig:fields}
+
+Über alle 1\,001 Zeitpunkte und die 64 gemeinsamen inneren Punkte beträgt die maximale Abweichung der groben FDM ungefähr $0{,}005348$, die von BT etwa $0{,}001041$. Dieser Vorteil gilt für den gewählten Eingang, Ausgang, Horizont und Vergleichsraum. Eine einzelne Testanregung ersetzt keine globale Systemfehleranalyse.
+
+\fig{02_hsv_frequency.pdf}{Links: relative Hankel-Singulärwerte für Integral- und Feldbeobachtung; jede Folge ist durch ihren eigenen größten Wert normiert. Unterschiedliche Beobachtungsoperatoren bewerten Richtungen unterschiedlich. Rechts: Frequenzfehler der Feldmodelle und die zugehörigen horizontalen Restsummenschranken. Die Frequenzabtastung allein zertifiziert kein kontinuierliches Maximum.}{fig:hsv}
+
+\fig{04_rank_and_bounds.pdf}{Links fallen die BT-Fehler zur feinen FDM stark ab, während die PDE-Fehler ein Plateau erreichen. Rechts bleiben die abgetasteten Frequenzfehler unter den numerischen BT-Restsummenschranken. Die beiden Diagramme verwenden unterschiedliche Fehlernormen und dürfen nicht punktweise gleichgesetzt werden.}{fig:rank}
+
+Die Ordnungsstudie in Abbildung~\ref{fig:conv} trennt Raum und Zeit bewusst. Für den Raum verwenden wir die exakte Wärme-Eigenmode $\sin(\pi x_1)\sin(\pi x_2)$ ohne Quelle, bei $t=0{,}1$. Die zeitliche Entwicklung des diskreten Modells wird dabei analytisch ausgewertet, sodass kein Euler-Fehler die räumliche Ordnung verdeckt. Für die Zeitstudie verwenden wir die echte Anregung des Blattes auf dem festen $17\times17$-Gitter und vergleichen Euler mit der zeitlich exakten diskreten Sinusmodenlösung.
+\fig{03_convergence.pdf}{Loglog-Diagramme isolierter Fehler. Die Raumstudie folgt annähernd $h^2$, die Euler-Zeitstudie annähernd $\Delta t$. Die gestrichelten Geraden zeigen die erwarteten Steigungen, nicht angepasste globale Fehlerschranken.}{fig:conv}
+
+\subsection{Warum der BT-Zeitfehler Ausschläge hat: kein QR-Iterationsplot}
+Der Fehler über der Zeit darf nicht mit dem Konvergenzverlauf einer Eigenwertiteration verwechselt werden. Für das vorliegende stabile System hat die eingeschwungene Antwort auf $u(t)=10\sin(\omega t)$ die Form
+\begin{equation}
+ y(t)\approx 10\operatorname{Im}\bigl(G(i\omega)e^{i\omega t}\bigr).
+\end{equation}
+Für das reduzierte Modell gilt dasselbe mit $G_r$. Somit ist auch der eingeschwungene vorzeichenbehaftete Ausgangsfehler eine periodische Antwort,
+\begin{equation}
+ e_y(t)\approx10\operatorname{Im}\bigl((G(i\omega)-G_r(i\omega))e^{i\omega t}\bigr),
+\end{equation}
+ergänzt um einen abklingenden Anfangstransienten. Unterschiedliche Amplituden und Phasen erzeugen Fehlermaxima und Fehlerauslöschungen. Eine Betragskurve zeigt deshalb häufig zwei Ausschläge pro Periode. Beim räumlichen Maximum $\max_i|e_i(t)|$ kann zusätzlich der maximierende Gitterpunkt wechseln; dadurch entstehen Knicke. Eine logarithmische Achse macht kleine Fehlerauslöschungen besonders sichtbar. Die adaptive Schrittweitenkurve ist ebenfalls kein QR-Verlauf: Dort sieht man Entscheidungen des Zeitreglers.
+
+Bei QR-Shifts handelt es sich um ein Werkzeug für eine Eigenwertiteration. Im BT-Umfeld existieren tatsächlich Shiftparameter, insbesondere in iterativen Low-Rank-ADI-Lösern für die Lyapunov-Gleichungen. Dort beschleunigen passend gewählte $p_j$ die Konstruktion der Gramians über lineare Systeme mit $A+p_jI$ \cite{adi}. Bei ausreichend konvergierten Gramians ändern sie nicht das Zielproblem der klassischen BT. Unsere Gramians werden mit einem dichten direkten Lyapunov-Löser berechnet; ein ADI-Konvergenzproblem ist hier nicht die Ursache des Zeitverlaufs.
+
+Die physikalische Systemmatrix einfach durch $A-\alpha I$ zu ersetzen würde dagegen die Dynamik und $G$ verändern. Das ist kein neutraler Trick zur Glättung des Fehlers. Ein größerer Rang kann die Fehleramplitude verkleinern, garantiert aber keinen monotonen Zeitverlauf. Frequenz- oder zeitfenstergewichtete Reduktionsmethoden können andere Zielgrößen bevorzugen; ihre jeweiligen Stabilitäts- und Fehleraussagen sind gesondert zu prüfen.
+
+\section{Laufzeiten, Speicher und Amortisation}
+\subsection{Aufbau und Online-Simulation getrennt betrachten}
+Für FDM wird dünnbesetzte LU, für die kleinen dichten BT-Matrizen dichte LU verwendet. Beide Verfahren lösen dieselbe implizite Euler-Vorschrift. Die Faktorisierung wird bei fester Schrittweite wiederverwendet. Diese strukturangepasste Implementierung ist ein praktischer Vergleich, keine Behauptung über die schnellste denkbare Implementierung des speziellen separierbaren Wärmeproblems.
+
+\begin{table}[htbp]\centering\small
+\caption{Gemessene Komponenten in Millisekunden. BT verwendet jeweils $r=4$; die Dimension $n$ bezeichnet sein Ausgangsmodell. Online bedeutet 1\,000 Schritte nach Faktorisierung.}
+\begin{tabular}{rrrrrr}\toprule
+$n$ & FDM-Aufbau & BT-Aufbau & FDM online & BT online & BT-Feld\\\midrule
+\tableinput runtime_rows.tex
+\bottomrule\end{tabular}
+\end{table}
+
+Die dichte Balancierung benötigt typischerweise $O(n^3)$ Rechenarbeit und $O(n^2)$ Speicher. Dünnbesetzte FDM-Matrizen haben dagegen nur $O(n)$ gespeicherte Sternkoeffizienten. Eine dünnbesetzte LU-Zerlegung kann Füllung erzeugen; die Kosten sind deshalb nicht einfach gleich fünf Multiplikationen pro Punkt und Schritt. Ein dichtes reduziertes Modell benötigt pro vorbereitetem Euler-Schritt etwa $O(r^2)$ Arbeit. Die Rekonstruktion eines vollständigen Feldes kostet zusätzlich $O(nr)$ je Ausgabe.
+
+Für große Systeme werden Gramian-Faktoren häufig mit Low-Rank-ADI- oder Krylov-Verfahren approximiert, anstatt volle Matrizen zu bilden \cite{benner2005,penzl}. Im hier verwendeten Fall $C=I$ ist die Ausgangsdimension allerdings $p=n$; eine niedrige Rangstruktur der Beobachtbarkeits-Gramian darf nicht pauschal vorausgesetzt werden.
+
+\fig{05_runtime_scaling.pdf}{Loglog-Skalierung der lokal gemessenen Laufzeiten. Die $n^3$-Gerade ist nur eine asymptotische Orientierung. Ein BT-Modell mit festem $r=4$ hat nahezu größenunabhängige Zustandsschritte; die Ausgabe des vollständigen Feldes wächst weiter mit $n$. Schwankungen kleiner Zeiten sind auch durch Speicher- und Interpretereffekte geprägt.}{fig:runtime}
+
+\subsection{Viele Eingänge mit demselben Modell}
+Sind $A,B,C$ unverändert, kann eine Balancierung für viele Eingänge wiederverwendet werden. Vereinfacht lautet die Gesamtkostenfunktion
+\begin{equation}
+ T_{\rm ges}(N)=T_{\rm Aufbau}+T_{\rm Faktorisierung}+N\,T_{\rm Lauf}.
+\end{equation}
+Ein berechneter Schnittpunkt ist nur dann sinnvoll, wenn der reduzierte Fehler für die Anwendung akzeptabel ist und dieselben Ausgaben berücksichtigt werden. In diesem Versuch ergibt sich gegenüber feiner FDM ein Schnittpunkt nach ungefähr \BreakEven\ Wiederholungen. Eine Änderung von $B$, $C$, Geometrie oder Parametern kann den Aufbau erneut erforderlich machen.
+\fig{06_amortization.pdf}{Aus gemessenen Median-Komponenten berechnete kumulierte Zeiten. Die BT-Laufkosten enthalten die Feldrekonstruktion. Die Kurven sind eine Kostenhochrechnung für ein unverändertes System; sie sind keine neu gemessenen 100 vollständigen Simulationskampagnen.}{fig:amort}
+
+\subsection{Matrixoperationen und einzelne Skalarprodukte}
+Die Gleichung $(Ax)_i=\sum_jA_{ij}x_j$ ist genau das Skalarprodukt der Zeile $i$ mit $x$. Ein gemeinsamer Aufruf \texttt{A @ x} berechnet diese Produkte in optimierten Bibliotheksroutinen. Einzelne Python-Aufrufe pro Zeile erzeugen zusätzlichen Verwaltungsaufwand. Dünnbesetzte Speicherung verhindert unnötige Multiplikationen mit mathematischen Nulleinträgen. Die mathematische Schreibweise als Summe ist deshalb keine eigenständige schnellere Implementierung. Bei diesem impliziten Verfahren bestimmen außerdem die Faktorisierung und die anschließenden linearen Lösevorgänge die Kosten; ein isolierter Matrix-Vektor-Mikrobenchmark ist kein Laufzeitbeweis für die ganze Simulation.

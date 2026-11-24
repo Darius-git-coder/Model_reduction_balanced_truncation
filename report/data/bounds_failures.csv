@@ -1,0 +1,3 @@
+method,tolerance,estimated_floor,adaptation,reason
+BT,0.001,0.001197255791261017,0.4939290408510715,Fixed fine FDM model exhausts the error budget; refine h and rebalance
+BT,0.0005,0.001197255791261017,0.4734642240218818,Fixed fine FDM model exhausts the error budget; refine h and rebalance

@@ -1,0 +1,9 @@
+{
+  "numerical_tests": 21,
+  "pages": 23,
+  "figure_groups": 10,
+  "standalone_text_matches": true,
+  "zip_integrity": true,
+  "latex_undefined_references": false,
+  "latex_overfull_boxes": false
+}

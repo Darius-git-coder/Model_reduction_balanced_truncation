@@ -1,0 +1,25 @@
+{
+  "python": "3.11.5 (main, Sep 11 2023, 08:19:27) [Clang 14.0.6 ]",
+  "numpy": "1.26.4",
+  "scipy": "1.13.1",
+  "platform": "macOS-10.16-x86_64-i386-64bit",
+  "machine": "x86_64",
+  "threads": [
+    {
+      "user_api": "blas",
+      "internal_api": "openblas",
+      "num_threads": 1,
+      "prefix": "libopenblas",
+      "filepath": "/Users/darius/anaconda3/lib/libopenblasp-r0.3.21.dylib",
+      "version": "0.3.21",
+      "threading_layer": "pthreads",
+      "architecture": "Haswell"
+    }
+  ],
+  "date": "2026-11-24",
+  "reference_modes": 192,
+  "reference_mode_check": 3.204363696348786e-06,
+  "validation_grid": 19,
+  "validation_times": 101,
+  "timing_repeats": 5
+}

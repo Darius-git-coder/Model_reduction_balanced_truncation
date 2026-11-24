@@ -1,0 +1,84 @@
+\section{Reproduktion, Dateien und Validierung}
+\subsection{Erzeugung der Messdaten und Abbildungen}
+Das Verzeichnis \texttt{report/} enthält den LaTeX-Quelltext, vektorielle PDF-Abbildungen, PNG-Vorschauen, CSV-Messreihen und NPZ-Felddaten. Die Programme verwenden die Funktionen des Repositories; zusätzliche Berichtsroutinen trennen Datenerzeugung und Darstellung.
+
+Vom Hauptverzeichnis des Repositories aus:
+\begin{verbatim}
+python -m pip install -r report/requirements.txt
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  python report/experiments.py
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  python report/plots.py
+cd report
+tectonic bericht.tex
+\end{verbatim}
+Die Umgebungsvariablen beschränken die betreffende Ausführung; sie sind keine dauerhafte Änderung der Rechnerkonfiguration. Alle Laufzeiten sind bei einer Wiederholung neu zu messen. Die Variante \texttt{bound\_adaptivity.py} kann die schätzer-/schrankengesteuerte Auswahl einzeln ausführen; \texttt{adaptive\_experiments.py} verbindet sie mit dem Zeitvergleich. Die Sinusreihenreferenz in \texttt{pilot\_reference.py} dient der unabhängigen nachträglichen Fehlerprüfung.
+
+\begin{table}[htbp]\centering\small
+\begin{tabularx}{\linewidth}{p{65mm}X}\toprule
+Datei & Inhalt\\\midrule
+\texttt{data/runtime.csv} & Aufbau-, Online- und Ausgabekosten\\
+\texttt{data/rank\_study.csv} & Rang, Feldfehler, Frequenzfehler und BT-Schranke\\
+\texttt{data/space\_convergence.csv} & Isolierte räumliche Konvergenz\\
+\texttt{data/time\_convergence.csv} & Euler-Zeitkonvergenz zum exakten endlichen Modell\\
+\texttt{data/bounds\_adaptive.csv} & Erfolgreiche schätzer-/schrankengesteuerte Auswahlen\\
+\texttt{data/bounds\_failures.csv} & Nicht freigegebene BT-Zieltoleranzen\\
+\texttt{data/adaptive\_time.csv} & Alle drei Metriken des festen/adaptiven Zeitvergleichs\\
+\texttt{data/environment.json} & Bibliotheksversionen, Threadzahl und Referenzparameter\\
+\texttt{data/manifest.json} & Hashes der für den Bericht verwendeten Programme\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Numerische Kontrollen}
+Geprüft werden die Vorzeichen und Transpositionen der beiden Gramian-Gleichungen sowie Symmetrie und positive Semidefinitheit ihrer Lösungen. Ein Testsystem kontrolliert die balancierten Gramians und die Erhaltung der Übertragungsfunktion beim vollständigen Koordinatenwechsel. Weitere Tests behandeln einen nicht erreichbaren Zustand, einen Nullausgang, die Stabilität reduzierter Wärmemodelle und die abgetastete BT-Schranke.
+
+Berichtsspezifische Tests vergleichen die analytischen Quellkoeffizienten mit numerischer Integration und die exakte diskrete Sinuslösung mit einem unabhängigen hochgenauen ODE-Lauf. Rand- und Anfangswerte der PDE-Reihe, der nichtäquidistante Operator im gleichmäßigen Spezialfall sowie die tatsächlichen akzeptierten/verworfenen Zeitversuche werden kontrolliert. Jeder adaptive Zeitversuch muss exakt drei lineare Lösungen erzeugen. Die gespeicherten erfolgreichen Auswahlreihen erfüllen ihre numerischen Budgettests und im vorliegenden Experiment auch die unabhängige Fehlerkontrolle. Letzteres ist eine Beobachtung, kein allgemeiner Zuverlässigkeitsbeweis des Richardson-Schätzers.
+
+Die Tests lassen sich vom Repository-Hauptverzeichnis aus starten:
+\begin{verbatim}
+PYTHONPATH=report python -m unittest report/test_report.py \
+  test_balancing.py test_comparison.py \
+  test_gramians.py test_simulation.py
+\end{verbatim}
+Die interaktiven HTML-Ansichten bleiben als Ergänzung verfügbar. Sie zeichnen Lösungen und beide Errormaps synchron; die statischen Abbildungen dieses PDFs werden aus denselben Definitionen beziehungsweise den gespeicherten Messreihen erzeugt.
+
+\subsection{Was dieser Bericht nicht zertifiziert}
+Die Versuche betreffen genau die beschriebene lineare Wärmegleichung, Randbehandlung, Anregung und Implementierung. Es gibt keinen hardwareunabhängigen Laufzeitsieger. Die PDE-Reihe wird numerisch abgeschnitten, die Energienorm quadraturbasiert ausgewertet und die Gramians numerisch komprimiert. Die Fehlerkarten prüfen nur ausgewählte Orte und Zeiten. Lokale AMR, gekoppelte $h/r$-Adaption, Parameterwechsel und großskalige Low-Rank-BT werden erläutert, aber nicht als ausgeführte Benchmarkvarianten dargestellt. Diese Grenzen sind wesentlich für die Interpretation der Ergebnisse.
+
+\begin{thebibliography}{99}
+\raggedright
+\bibitem{sheet} T.~Breiten: \emph{Model reduction -- exercise sheet 2}. TU Berlin, Wintersemester 2026/27. Vom Nutzer bereitgestelltes Aufgabenblatt \texttt{sheet02.pdf} mit den Vorlagen \texttt{helpers.py} und \texttt{bt\_in\_action.py}.
+
+\bibitem{lall} S.~Lall: \emph{Engr210a, Lecture 11: Hankel Operators and Model Reduction}. Stanford University, 7.~November 2001. Stabilität und Fehlerabschätzungen für Balanced Truncation.\par
+\url{https://lall.stanford.edu/engr210a/lectures/lecture11_2001_11_07_01.pdf}
+
+\bibitem{benner2023} P.~Benner: \emph{Model Order Reduction at Industrial Scale}. KLAIM 2023, Kaiserslautern, September 2023. Abschnitt zu balancierter Projektion.\par
+\url{https://csc.mpi-magdeburg.mpg.de/mpcsc/benner/publications_fiona/talks/2023/benner-klaim23.pdf}
+
+\bibitem{energy} Max-Planck-Institut Magdeburg: \emph{Lecture 4: Balanced Truncation}. Vorlesungsunterlagen, insbesondere Energieinterpretationen der Gramians.\par
+\url{https://www.mpi-magdeburg.mpg.de/2725965/Lecture4_Balanced-truncation.pdf}
+
+\bibitem{benner2005} P.~Benner: \emph{Numerical Linear Algebra for Model Reduction in Control and Simulation}. Preprint, 2005. Diskussion dichter Kosten und skalierbarer Verfahren.\par
+\url{https://cscproxy.mpi-magdeburg.mpg.de/mpcsc/benner/pub/b_mitt.pdf}
+
+\bibitem{penzl} T.~Penzl: \emph{Algorithms for model reduction of large dynamical systems}. Linear Algebra and its Applications, 2006; bearbeitete Fassung des Berichts SFB393/99-40.\par
+\url{https://www.sciencedirect.com/science/article/pii/S0024379506000371}
+
+\bibitem{lower} \emph{A Lower Bound for the Balanced Truncation Error for MIMO Systems}. IEEE Transactions on Automatic Control. DOI: 10.1109/TAC.2014.2368232.\par
+\url{https://doi.org/10.1109/TAC.2014.2368232}
+
+\bibitem{debrabant} K.~Debrabant und J.~Lang: \emph{On Asymptotic Global Error Estimation and Control of Finite Difference Solutions for Semilinear Parabolic Equations}. arXiv:0911.2656, eingereicht 2009, überarbeitete Fassung 2014.\par
+\url{https://arxiv.org/abs/0911.2656}
+
+\bibitem{hybrid} \emph{A hybrid adaptive finite difference method powered by a posteriori error estimation technique}. Journal of Computational and Applied Mathematics 259 (2014), 117--128. DOI: 10.1016/j.cam.2013.04.009.\par
+\url{https://doi.org/10.1016/j.cam.2013.04.009}
+
+\bibitem{kochmann} D.~M.~Kochmann: \emph{Introduction to Finite Element Analysis}. ETH Zürich, Fassung vom 14.~Februar 2025; Beispiel zur Wärmegleichung mit finiten Differenzen.\par
+\url{https://ethz.ch/content/dam/ethz/special-interest/mavt/mechanical-systems/mm-dam/documents/Notes/IntroToFEA_red.pdf}
+
+\bibitem{scipy} SciPy: Dokumentation zu \texttt{solve\_continuous\_lyapunov}. SciPy löst $AX+XA^H=Q$; die negativen Gramian-RHS werden entsprechend übergeben. Lokale Experimente: SciPy 1.13.1.\par
+\url{https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.solve_continuous_lyapunov.html}
+
+\bibitem{adi} P.~Benner, P.~Kürschner und J.~Saak: \emph{Self-Generating and Efficient Shift Parameters in ADI Methods for Large Lyapunov and Sylvester Equations}. MPI Magdeburg, Preprint MPIMD/13-18, Oktober 2013.\par
+\url{https://csc.mpi-magdeburg.mpg.de/preprints/2013/MPIMD13-18.pdf}
+\end{thebibliography}
