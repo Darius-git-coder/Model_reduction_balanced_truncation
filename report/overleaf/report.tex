@@ -67,6 +67,8 @@ Finite Differenzen (FDM) erzeugen aus einer partiellen Differentialgleichung ein
 \end{itemize}
 
 Der Bericht unterscheidet gemessene Fehler, asymptotische Schätzungen, theoretische Schranken und arithmetische Aufwandsmodelle. Es wird weder globale Optimalität der Adaptivität noch eine universelle Überlegenheit eines Verfahrens behauptet.
+
+Abschnitt~\ref{sec:sylvester} enthält außerdem die vollständige Lösung von Aufgabe 1.2 zur eindeutigen Lösbarkeit der Sylvestergleichung und erklärt ihren Zusammenhang mit den Gramian-Gleichungen.
 \tableofcontents
 \clearpage
 \pagenumbering{arabic}
@@ -458,6 +460,77 @@ modelliert, wobei $\ell_k$ und $u_k$ die strukturellen Einträge unter beziehung
 \textbf{Adaptivität ist besonders nützlich}, wenn eine feste Auflösung viel Arbeit in bereits ausreichend genauen Bereichen oder Zeitabschnitten verbringt. Sie verursacht aber Schätz-, Kontroll-, Übertragungs- und ggf. erneute Faktorisierungskosten. Bei BT können Gramian-Iterationen zusätzlich über Lyapunov-Residuen kontrolliert werden; ein kleines Residuum allein ist ohne Konditionierungsinformation noch keine fertige Zustandsfehlergarantie. Bei Parameter- oder Basiswechseln entstehen weitere Projektions- und Initialisierungsfehler.
 
 Die sinnvolle Kombination lautet deshalb: erst die geforderte Ausgangsgröße und Fehlernorm festlegen, dann Diskretisierungs- und Reduktionsbudgets trennen, eine passende Raum-/Rang-/Zeitstrategie wählen und schließlich tatsächlichen Fehler, gesamte Laufzeit und Arbeitszähler gemeinsam überprüfen.
+
+
+\clearpage
+
+% Included from sylvester.tex
+\section{Aufgabe 1.2: Eindeutigkeit der Sylvestergleichung}\label{sec:sylvester}
+\subsection{Behauptung}
+Seien $A\in\R^{n\times n}$, $B\in\R^{m\times m}$ und $W\in\R^{n\times m}$. Zu zeigen ist:
+\begin{equation}
+ \Lambda(A)\cap\Lambda(B)=\varnothing
+ \quad\Longrightarrow\quad
+ AX-XB=W\text{ besitzt genau eine Lösung }X\in\R^{n\times m}.
+\end{equation}
+Die zweite Matrix $B$ ist hier quadratisch. Sie ist nicht mit der rechteckigen Eingangsmatrix eines LTI-Systems zu verwechseln.
+
+\subsection{Allgemeiner Beweis mit komplexen Schurzerlegungen}
+Wir betrachten die reellen Daten zunächst als komplexe Matrizen. Nach dem Schurschen Zerlegungssatz existieren unitäre Matrizen $U\in\mathbb C^{n\times n}$ und $V\in\mathbb C^{m\times m}$ mit
+\begin{equation}
+ A=USU^*,\qquad B=VTV^*,
+\end{equation}
+wobei $S,T$ obere Dreiecksmatrizen sind. Ihre Diagonaleinträge sind die Eigenwerte von $A$ beziehungsweise $B$. Das Symbol $*$ bezeichnet die konjugierte Transposition.
+
+Setze
+\begin{equation}
+ Y=U^*XV,\qquad F=U^*WV.
+\end{equation}
+Multiplikation der ursprünglichen Gleichung von links mit $U^*$ und von rechts mit $V$ ergibt die äquivalente Gleichung
+\begin{equation}\label{eq:schursylvester}
+ SY-YT=F.
+\end{equation}
+Die Transformation ist bijektiv: Aus jedem $Y$ erhält man genau ein $X=UYV^*$.
+
+Schreiben wir $Y=(y_1,\ldots,y_m)$ und $F=(f_1,\ldots,f_m)$ spaltenweise, folgt wegen der oberen Dreiecksstruktur von $T$ für die $j$-te Spalte
+\begin{equation}\label{eq:columnrecursion}
+ (S-t_{jj}I_n)y_j
+ =f_j+\sum_{k=1}^{j-1}t_{kj}y_k.
+\end{equation}
+Für $j=1$ ist die Summe leer. Die Diagonale der oberen Dreiecksmatrix $S-t_{jj}I_n$ besteht aus den Zahlen
+\begin{equation}
+ s_{ii}-t_{jj},\qquad i=1,\ldots,n.
+\end{equation}
+Nach Voraussetzung ist keiner dieser Werte null: $s_{ii}\in\Lambda(A)$ und $t_{jj}\in\Lambda(B)$, und beide Spektren sind disjunkt. Daher ist $S-t_{jj}I_n$ für jedes $j$ invertierbar.
+
+Damit ist zunächst $y_1$ eindeutig bestimmt. Sind $y_1,\ldots,y_{j-1}$ bereits eindeutig bekannt, so ist die rechte Seite von Gleichung~\eqref{eq:columnrecursion} festgelegt und bestimmt genau ein $y_j$. Induktiv erhalten wir eine existierende und eindeutige komplexe Lösung $Y$ und somit genau eine komplexe Lösung $X$ der ursprünglichen Gleichung.
+
+Es bleibt die Reellwertigkeit. Da $A,B,W$ reell sind, erfüllt mit $X$ auch die komponentenweise konjugierte Matrix $\overline X$ dieselbe Gleichung:
+\begin{equation}
+ A\overline X-\overline X B=W.
+\end{equation}
+Die bereits bewiesene Eindeutigkeit über $\mathbb C$ erzwingt $X=\overline X$. Also ist $X$ reell. Damit sind Existenz und Eindeutigkeit der gesuchten reellen Lösung bewiesen.\hfill$\square$
+
+\subsection{Intuition im diagonalisierbaren Spezialfall}
+Sind $A=M\operatorname{diag}(\alpha_i)M^{-1}$ und $B=N\operatorname{diag}(\beta_j)N^{-1}$ diagonalisierbar, setzen wir $\widehat X=M^{-1}XN$ und $\widehat W=M^{-1}WN$. Dann reduziert sich das Problem komponentenweise auf
+\begin{equation}
+ (\alpha_i-\beta_j)\widehat X_{ij}=\widehat W_{ij},\qquad
+ \widehat X_{ij}=\frac{\widehat W_{ij}}{\alpha_i-\beta_j}.
+\end{equation}
+Die disjunkten Spektren verhindern die Division durch null. Dieser Spezialfall erklärt die Bedingung anschaulich; der allgemeine Schurbeweis oben setzt keine Diagonalisierbarkeit voraus.
+
+Haben beide Matrizen dagegen denselben Eigenwert, ist eindeutige Lösbarkeit für beliebige $W$ nicht mehr gesichert. Schon bei $A=B=[1]$ lautet die Gleichung $0=W$: Für $W=[1]$ gibt es keine Lösung, für $W=[0]$ unendlich viele.
+
+\subsection{Zusammenhang mit den Gramians aus Aufgabe 1.1}
+Die Steuerbarkeits-Gramian erfüllt, mit $B_{\rm in}$ als Eingangsmatrix,
+\begin{equation}
+ AP+PA^\top=-B_{\rm in}B_{\rm in}^\top
+ \quad\Longleftrightarrow\quad
+ AP-P(-A^\top)=-B_{\rm in}B_{\rm in}^\top.
+\end{equation}
+Ist $A$ Hurwitz-stabil, liegen seine Eigenwerte strikt in der linken Halbebene, die von $-A^\top$ strikt in der rechten. Beide Spektren sind disjunkt. Aufgabe 1.2 liefert damit die eindeutige Lösbarkeit der ersten Lyapunov-Gleichung. Für $Q$ gilt dieselbe Argumentation mit dem Paar $(A^\top,-A)$.
+
+Die Aussage beweist die eindeutige Lösbarkeit. Symmetrie und positive Semidefinitheit der Gramians folgen zusätzlich aus den Integralformeln in Abschnitt~3.1. Eindeutigkeit bedeutet außerdem nicht automatisch gute numerische Konditionierung: Nahe beieinanderliegende Spektren und Nichtnormalität können die Empfindlichkeit einer Sylvesterlösung erhöhen.
 
 
 \clearpage

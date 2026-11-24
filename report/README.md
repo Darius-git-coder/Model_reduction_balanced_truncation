@@ -3,6 +3,9 @@
 `bericht.pdf` ist der kompilierte deutsche Bericht. Er behandelt die Methoden,
 Fehlernormen und -schranken, getrennte Aufbau-/Simulationskosten sowie adaptive
 Raum-/Rangwahl und adaptive Zeitintegration.
+Außerdem enthält er die vollständige Lösung von Aufgabe 1.2 zur
+Sylvestergleichung: Schurbeweis ohne Diagonalisierbarkeitsannahme,
+Reellwertigkeit der Lösung und Zusammenhang mit den Lyapunov-Gleichungen.
 
 ## In Overleaf verwenden
 
@@ -58,5 +61,5 @@ PYTHONPATH=report python -m unittest report/test_report.py \
 
 `prepare_overleaf.py` erzeugt das eigenständige Overleaf-Dokument aus den
 modularen Quelldateien und Messwerttabellen. Änderungen am Text daher in
-`bericht.tex`, `theory.tex`, `results.tex`, `adaptivity.tex` oder
+`bericht.tex`, `theory.tex`, `results.tex`, `adaptivity.tex`, `sylvester.tex` oder
 `reproduction.tex` vornehmen und danach den Export neu erzeugen.

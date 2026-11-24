@@ -155,7 +155,8 @@ und prüft dabei beide Errormaps und beide Zeitmarkierungen gemeinsam.
 ## Bericht, Messungen und Overleaf
 
 - [PDF-Bericht](report/bericht.pdf): Theorie, Stärken/Grenzen, Konvergenz,
-  Errormaps, Laufzeiten und adaptive Vergleiche mit Arbeits- und Schrittzählern.
+  Errormaps, Laufzeiten, adaptive Vergleiche mit Arbeits- und Schrittzählern
+  sowie der vollständige Schurbeweis für Aufgabe 1.2 (Sylvestergleichung).
 - [Overleaf-Paket](report/Overleaf_FDM_BT.zip): eine eigenständige `report.tex`
   und der benötigte Ordner `Bilder/`; keine zusätzlichen TeX-Teildateien nötig.
 - [Einzelne report.tex](report/overleaf/report.tex) und [Bilderordner](report/overleaf/Bilder).
